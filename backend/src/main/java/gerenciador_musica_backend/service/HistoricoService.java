@@ -4,6 +4,8 @@ import gerenciador_musica_backend.dto.HistoricoItemDTO;
 import gerenciador_musica_backend.dto.MusicaResumoDTO;
 import gerenciador_musica_backend.dto.PaginaResponseDTO;
 import gerenciador_musica_backend.exception.MusicaNaoEncontradaException;
+import gerenciador_musica_backend.model.Album;
+import gerenciador_musica_backend.model.Artista;
 import gerenciador_musica_backend.model.HistoricoMusica;
 import gerenciador_musica_backend.model.Musica;
 import gerenciador_musica_backend.model.Usuario;
@@ -104,16 +106,14 @@ public class HistoricoService {
 
     private HistoricoItemDTO converterParaItem(HistoricoMusica historico) {
         Musica musica = historico.getMusica();
+        Artista artistaPrincipal = musica.getArtistaPrincipal();
+        Album album = musica.getAlbum();
 
         MusicaResumoDTO musicaResumo = new MusicaResumoDTO(
                 musica.getIdMusica(),
                 musica.getTitulo(),
-                musica.getArtistaPrincipal() != null
-                        ? musica.getArtistaPrincipal().getNome()
-                        : null,
-                musica.getAlbum() != null
-                        ? musica.getAlbum().getCapaUrl()
-                        : null
+                artistaPrincipal != null ? artistaPrincipal.getNome() : null,
+                album != null ? album.getCapaUrl() : null
         );
 
         return new HistoricoItemDTO(

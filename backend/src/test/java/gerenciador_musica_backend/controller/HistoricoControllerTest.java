@@ -15,7 +15,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -60,7 +59,7 @@ class HistoricoControllerTest {
 
     @Test
     void deveRepassarParametrosDePaginacaoDaQuery() throws Exception {
-        when(historicoService.listarHistorico(eq(1), eq(5)))
+        when(historicoService.listarHistorico(1, 5))
                 .thenReturn(new PaginaResponseDTO<>(List.of(), 1, 5, 0, 0));
 
         mockMvc.perform(get("/api/historico")

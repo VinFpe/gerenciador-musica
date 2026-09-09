@@ -183,7 +183,7 @@ class HistoricoServiceTest {
         verify(historicoMusicaRepository)
                 .findByUsuario_IdOrderByVisualizadoEmDesc(eq(1L), captor.capture());
 
-        assertThat(captor.getValue().getPageNumber()).isEqualTo(0);
+        assertThat(captor.getValue().getPageNumber()).isZero();
         assertThat(captor.getValue().getPageSize()).isEqualTo(20);
     }
 
