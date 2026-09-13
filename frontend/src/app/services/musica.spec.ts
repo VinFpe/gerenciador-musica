@@ -95,6 +95,44 @@ describe('MusicaService', () => {
     expect(resultado?.artistasParticipantes).toHaveLength(0);
   });
 
+  it('deve buscar músicas relacionadas do endpoint específico', () => {
+    let resultado: MusicaListagem[] | undefined;
+
+    service.buscarRelacionadas(1).subscribe((lista) => (resultado = lista));
+
+    const requisicao = httpMock.expectOne(`${apiUrl}/1/relacionadas`);
+    expect(requisicao.request.method).toBe('GET');
+
+    requisicao.flush(paginaDeExemplo().itens);
+
+    expect(resultado).toHaveLength(1);
+    expect(resultado?.[0].titulo).toBe('Bohemian Rhapsody');
+  });
+
+  it('deve fazer fallback para pesquisa por gênero quando endpoint de relacionadas falhar', () => {
+    let resultado: MusicaListagem[] | undefined;
+
+    service.buscarRelacionadas(1, 2).subscribe((lista) => (resultado = lista));
+
+    const reqRelacionadas = httpMock.expectOne(`${apiUrl}/1/relacionadas`);
+    reqRelacionadas.flush({ message: 'Not Found' }, { status: 404, statusText: 'Not Found' });
+
+    const reqPesquisa = httpMock.expectOne(`${apiUrl}?generoId=2&page=0&size=10`);
+    expect(reqPesquisa.request.method).toBe('GET');
+
+    reqPesquisa.flush({
+      ...paginaDeExemplo(),
+      itens: [
+        { ...paginaDeExemplo().itens[0], id: 1 },
+        { ...paginaDeExemplo().itens[0], id: 2, titulo: 'Another One Bites the Dust' }
+      ]
+    });
+
+    expect(resultado).toHaveLength(1);
+    expect(resultado?.[0].id).toBe(2);
+    expect(resultado?.[0].titulo).toBe('Another One Bites the Dust');
+  });
+
   function paginaDeExemplo(): PaginaResponse<MusicaListagem> {
     return {
       itens: [

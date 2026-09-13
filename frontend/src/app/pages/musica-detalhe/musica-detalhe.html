@@ -105,5 +105,60 @@
         }
       </aside>
     </div>
+
+    <section class="secao-relacionadas" aria-labelledby="titulo-relacionadas">
+      <h2 id="titulo-relacionadas">Músicas relacionadas</h2>
+
+      @if (carregandoRelacionadas()) {
+        <p class="mensagem-estado">Carregando músicas relacionadas...</p>
+      } @else if (musicasRelacionadas().length > 0) {
+        <ul class="lista-relacionadas">
+          @for (relacionada of musicasRelacionadas(); track relacionada.id) {
+            <li class="relacionada-card">
+              <a
+                class="relacionada-link"
+                [routerLink]="['/musicas', relacionada.id]"
+                [state]="{ queryParams: voltarQueryParams() }"
+              >
+                <img
+                  class="relacionada-capa"
+                  [src]="relacionada.album?.capaUrl || '/capa-padrao.png'"
+                  [alt]="'Capa de ' + relacionada.titulo"
+                  loading="lazy"
+                />
+
+                <div class="relacionada-info">
+                  <span class="relacionada-titulo">{{ relacionada.titulo }}</span>
+                  <span class="relacionada-detalhe">
+                    {{ relacionada.artistaPrincipal.nome }}
+                    @if (relacionada.album) {
+                      · {{ relacionada.album.titulo }}
+                    }
+                    · {{ relacionada.anoLancamento }}
+                    · {{ formatarDuracao(relacionada.duracaoSegundos) }}
+                  </span>
+                  @if (relacionada.generos.length > 0) {
+                    <div class="relacionada-generos">
+                      @for (genero of relacionada.generos; track genero.id) {
+                        <span class="genero-tag">{{ genero.nome }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </a>
+
+              <app-curtir-botao
+                class="relacionada-curtir"
+                [tipo]="'musica'"
+                [id]="relacionada.id"
+                [curtidoInicial]="relacionada.curtida"
+              />
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="mensagem-estado">Nenhuma música relacionada encontrada.</p>
+      }
+    </section>
   }
 </div>
