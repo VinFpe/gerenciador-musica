@@ -542,6 +542,53 @@ public class MusicaService {
         return converterParaResponse(musica);
     }
 
+    @Transactional(readOnly = true)
+    public List<MusicaListagemDTO> buscarMusicasRelacionadas(Long idMusica) {
+        Musica musicaAlvo = obterEntidadePorId(idMusica);
+
+        List<Musica> relacionadas = new ArrayList<>();
+        Set<Long> idsIgnorados = new HashSet<>();
+        idsIgnorados.add(musicaAlvo.getIdMusica());
+
+        Artista artistaPrincipal = musicaAlvo.getArtistaPrincipal();
+        if (artistaPrincipal != null && artistaPrincipal.getIdArtista() != null) {
+            List<Musica> doArtista = musicaRepository.buscarPorArtistaPrincipalExcluindo(
+                    artistaPrincipal.getIdArtista(),
+                    musicaAlvo.getIdMusica(),
+                    PageRequest.of(0, 5)
+            );
+            relacionadas.addAll(doArtista);
+            doArtista.forEach(m -> idsIgnorados.add(m.getIdMusica()));
+        }
+
+        int limiteRestante = 5 - relacionadas.size();
+        Set<Long> idsGeneros = musicaAlvo.getGeneros().stream()
+                .map(Genero::getIdGenero)
+                .collect(Collectors.toSet());
+
+        if (limiteRestante > 0 && !idsGeneros.isEmpty()) {
+            List<Musica> doGenero = musicaRepository.buscarPorGenerosExcluindo(
+                    idsGeneros,
+                    idsIgnorados,
+                    PageRequest.of(0, limiteRestante)
+            );
+            relacionadas.addAll(doGenero);
+        }
+
+        List<Long> idsRelacionados = relacionadas.stream()
+                .map(Musica::getIdMusica)
+                .toList();
+
+        Set<Long> idsCurtidos = obterIdsCurtidosSafely(idsRelacionados);
+
+        return relacionadas.stream()
+                .map(m -> converterParaListagem(
+                        m,
+                        idsCurtidos.contains(m.getIdMusica())
+                ))
+                .toList();
+    }
+
     private Musica obterEntidadePorId(Long idMusica) {
         if (idMusica == null || idMusica <= 0) {
             throw new DadosMusicaInvalidosException(
@@ -741,5 +788,29 @@ public class MusicaService {
         throw new IllegalStateException(
                 "Usuário autenticado não encontrado."
         );
+    }
+
+    private Set<Long> obterIdsCurtidosSafely(List<Long> idsMusicas) {
+        if (idsMusicas == null || idsMusicas.isEmpty()) {
+            return Set.of();
+        }
+
+        try {
+            Authentication authentication = SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+            if (authentication != null
+                    && authentication.isAuthenticated()
+                    && authentication.getPrincipal() instanceof Usuario usuario) {
+                return curtidaMusicaRepository.buscarIdsCurtidosPeloUsuario(
+                        usuario.getId(),
+                        idsMusicas
+                );
+            }
+        } catch (Exception ignored) {
+        }
+
+        return Set.of();
     }
 }

@@ -46,6 +46,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -820,5 +821,41 @@ class MusicaServiceTest {
                 .isInstanceOf(DadosMusicaInvalidosException.class);
 
         verify(musicaRepository, never()).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deveBuscarMusicasRelacionadasPriorizandoArtistaEDepoisGeneroExcluindoAMusicaConsultada() {
+        Artista artistaA = montarArtista(1L, "Artista A");
+        Artista artistaB = montarArtista(2L, "Artista B");
+
+        Genero rock = new Genero("Rock");
+        rock.setIdGenero(10L);
+
+        Musica alvo = new Musica("Música Alvo", null, 200, (short) 2020, artistaA, null);
+        alvo.setIdMusica(1L);
+        alvo.setGeneros(Set.of(rock));
+
+        Musica doArtista = new Musica("Do Mesmo Artista", null, 180, (short) 2021, artistaA, null);
+        doArtista.setIdMusica(2L);
+        doArtista.setGeneros(Set.of(rock));
+
+        Musica doGenero = new Musica("Do Mesmo Gênero", null, 210, (short) 2019, artistaB, null);
+        doGenero.setIdMusica(3L);
+        doGenero.setGeneros(Set.of(rock));
+
+        when(musicaRepository.findById(1L)).thenReturn(Optional.of(alvo));
+        when(musicaRepository.buscarPorArtistaPrincipalExcluindo(eq(1L), eq(1L), any(Pageable.class)))
+                .thenReturn(List.of(doArtista));
+        when(musicaRepository.buscarPorGenerosExcluindo(eq(Set.of(10L)), any(), any(Pageable.class)))
+                .thenReturn(List.of(doGenero));
+
+        List<MusicaListagemDTO> relacionadas = musicaService.buscarMusicasRelacionadas(1L);
+
+        assertThat(relacionadas).hasSize(2);
+        assertThat(relacionadas.get(0).id()).isEqualTo(2L);
+        assertThat(relacionadas.get(0).titulo()).isEqualTo("Do Mesmo Artista");
+        assertThat(relacionadas.get(1).id()).isEqualTo(3L);
+        assertThat(relacionadas.get(1).titulo()).isEqualTo("Do Mesmo Gênero");
+        assertThat(relacionadas).extracting(MusicaListagemDTO::id).doesNotContain(1L);
     }
 }
