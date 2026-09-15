@@ -126,4 +126,33 @@ public interface MusicaRepository
     List<MusicaCatalogoProjection> buscarCatalogoPorAlbum(
             @Param("idAlbum") Long idAlbum
     );
+
+    @Query("""
+            SELECT DISTINCT m
+            FROM Musica m
+            JOIN m.creditosArtistas credito
+            WHERE credito.artista.idArtista = :idArtistaPrincipal
+              AND credito.papel = gerenciador_musica_backend.model.PapelArtistaMusica.PRINCIPAL
+              AND m.idMusica <> :idMusicaConsultada
+            ORDER BY m.titulo ASC, m.idMusica ASC
+            """)
+    List<Musica> buscarPorArtistaPrincipalExcluindo(
+            @Param("idArtistaPrincipal") Long idArtistaPrincipal,
+            @Param("idMusicaConsultada") Long idMusicaConsultada,
+            org.springframework.data.domain.Pageable pageable
+    );
+
+    @Query("""
+            SELECT DISTINCT m
+            FROM Musica m
+            JOIN m.generos g
+            WHERE g.idGenero IN :idsGeneros
+              AND m.idMusica NOT IN :idsIgnorados
+            ORDER BY m.titulo ASC, m.idMusica ASC
+            """)
+    List<Musica> buscarPorGenerosExcluindo(
+            @Param("idsGeneros") java.util.Set<Long> idsGeneros,
+            @Param("idsIgnorados") java.util.Set<Long> idsIgnorados,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

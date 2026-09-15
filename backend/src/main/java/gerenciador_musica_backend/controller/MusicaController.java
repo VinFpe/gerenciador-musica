@@ -9,11 +9,8 @@ import gerenciador_musica_backend.service.MusicaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Catálogo público de músicas (US06): pesquisa com filtros opcionais e
- * consulta de detalhes. O cadastro de músicas é feito à parte, pelo
- * AdminMusicaController (POST /api/admin/musicas).
- */
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/musicas")
 public class MusicaController {
@@ -84,5 +81,12 @@ public class MusicaController {
         historicoService.registrarVisualizacao(id);
 
         return ResponseEntity.ok(musica);
+    }
+     
+    @GetMapping("/{id}/relacionadas")
+    public ResponseEntity<List<MusicaListagemDTO>> buscarRelacionadas(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(musicaService.buscarMusicasRelacionadas(id));
     }
 }

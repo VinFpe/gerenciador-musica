@@ -163,4 +163,34 @@ class MusicaControllerTest {
 
         verify(historicoService, never()).registrarVisualizacao(any());
     }
+
+    @Test
+    void deveBuscarMusicasRelacionadas() throws Exception {
+        MusicaListagemDTO itemRelacionado = new MusicaListagemDTO(
+                2L, "Love of My Life", 219, (short) 1975,
+                new ArtistaResumoDTO(1L, "Queen", "Queen", null, null),
+                null,
+                Set.of(),
+                Set.of(),
+                false
+        );
+
+        when(musicaService.buscarMusicasRelacionadas(1L))
+                .thenReturn(List.of(itemRelacionado));
+
+        mockMvc.perform(get("/api/musicas/1/relacionadas"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(2))
+                .andExpect(jsonPath("$[0].titulo").value("Love of My Life"))
+                .andExpect(jsonPath("$[0].artistaPrincipal.nome").value("Queen"));
+    }
+
+    @Test
+    void deveRetornar404QuandoBuscarRelacionadasDeMusicaInexistente() throws Exception {
+        when(musicaService.buscarMusicasRelacionadas(99L))
+                .thenThrow(new MusicaNaoEncontradaException(99L));
+
+        mockMvc.perform(get("/api/musicas/99/relacionadas"))
+                .andExpect(status().isNotFound());
+    }
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, catchError, map, of } from 'rxjs';
 
 import { MusicaFiltro } from '../models/MusicaFiltro';
 import { MusicaListagem } from '../models/MusicaListagem';
@@ -8,9 +8,6 @@ import { MusicaResponse } from '../models/MusicaResponse';
 import { PaginaResponse } from '../models/PaginaResponse';
 import { environment } from '../../environments/environment';
 
-// Encapsula as requisições HTTP do catálogo público de músicas (US06).
-// O interceptor JWT já é aplicado globalmente (ver app.config.ts), então
-// nenhuma configuração extra de autenticação é necessária aqui.
 @Injectable({
   providedIn: 'root'
 })
@@ -35,6 +32,19 @@ export class MusicaService {
     return this.http.get<MusicaResponse>(`${this.apiUrl}/${id}`);
   }
 
+  buscarRelacionadas(id: number, generoId?: number): Observable<MusicaListagem[]> {
+    return this.http.get<MusicaListagem[]>(`${this.apiUrl}/${id}/relacionadas`).pipe(
+      catchError(() => {
+        if (generoId) {
+          return this.pesquisar({ generoId }, 0, 10).pipe(
+            map((pagina) => pagina.itens.filter((m) => m.id !== id).slice(0, 5))
+          );
+        }
+        return of([]);
+      })
+    );
+  }
+
   private montarParametros(
     filtro: MusicaFiltro,
     pagina?: number,
@@ -55,8 +65,6 @@ export class MusicaService {
     return params;
   }
 
-  // Nunca envia um parâmetro nulo, indefinido ou composto só de espaços —
-  // o backend trata a ausência do parâmetro como "sem filtro".
   private adicionarSeNaoVazio(
     params: HttpParams,
     nome: string,
